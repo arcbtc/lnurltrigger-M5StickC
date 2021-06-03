@@ -6,9 +6,13 @@ Install Arduino IDE
 Install ESP32 boards
 https://github.com/espressif/arduino-esp32/blob/master/docs/arduino-ide/boards_manager.md
 
-In Arduino IDE from "library manager" install ArduinoJson, M5StickC
+In Arduino IDE from "sketch/include library/library manager" install ArduinoJson, M5StickC
 
-In Arduino IDE select "M5Stick-C" from "boards manager"
+In Arduino IDE select "M5Stick-C" from "tools/boards manager"
+
+In Arduino IDE select port from "tools/port"
+
+UPLOAD
 
 Connect to WIFI lnurltrigger (pass: password1), and go 192.168.4.1 in a browser
 
