@@ -306,8 +306,8 @@ void portal()
 //MOUNT FS AND READ CONFIG.JSON
 File file = SPIFFS.open("/config.txt");
 
-String spiffing = file.readStringUntil('\n');
-String spiffcontent = spiffing.c_str();
+spiffing = file.readStringUntil('\n');
+spiffcontent = spiffing.c_str();
 DynamicJsonDocument json(1024);
 deserializeJson(json, spiffcontent);
 if (String(spiffcontent) != "placeholder")
