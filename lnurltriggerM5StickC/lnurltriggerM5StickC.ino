@@ -1,25 +1,30 @@
 
-
 //////////////LOAD LIBRARIES////////////////
 
 #include "FS.h"
-#include <WiFiManager.h> 
+#include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
 #include "SPIFFS.h"
 #include <M5StickC.h>
 
-/////////////////SOME VARIABLES///////////////////
+bool USEPORTAL = false;
 
-char lnbits_server[40] = "lnbits.com";
-char admin_key[300] = "";
+/////////IF NOT USING PORTAL TO CHANGE////////////////////////
+
+const char* ssid = "yourNetworkName";
+const char* password =  "yourNetworkPass";
+
+char lnbits_server[40] = "btc21.satoshigo.app";
+char invoice_key[300] = "";
 char lnbits_description[100] = "lnurltrigger";
 char lnbits_amount[500] = "100";
 char high_pin[5] = "26";
 char time_pin[20] = "200";
-char webhook_url[100] = "";
-char success_message[100] = "Thanks for the payment!";
-char success_url[100] = "";
+
+/////////////////SOME VARIABLES///////////////////
+
+
 char static_ip[16] = "10.0.1.56";
 char static_gw[16] = "10.0.1.1";
 char static_sn[16] = "255.255.255.0";
@@ -28,8 +33,9 @@ bool down = false;
 bool newLNURL = false;
 bool firstCheck = true;
 bool buttonA = false;
-const char* spiffcontent = "";
-String spiffing; 
+
+const char *spiffcontent = "";
+String spiffing;
 int new_balance = 0;
 int old_balance = 0;
 
@@ -56,7 +62,6 @@ void setup()
   }
   
 }
-
 void connectingScreen()
 {
   M5.Lcd.fillScreen(BLACK);
@@ -137,8 +142,8 @@ void loop() {
 void getbalance() {
   WiFiClientSecure client;
   client.setInsecure();
-  const char *lnbitsserver = lnbits_server;
-  const char *adminkey = admin_key;
+  const char* lnbitsserver = lnbits_server;
+  const char* invoicekey = invoice_key;
 
   if (!client.connect(lnbitsserver, 443)){
     down = true;
@@ -182,17 +187,7 @@ void getbalance() {
   
 }
 
-bool makelnurlp()
-{
-  WiFiClientSecure client;
-  client.setInsecure();
-  const char *lnbitsserver = lnbits_server;
-  const char *adminkey = admin_key;
-  const char *lnbitsamount = lnbits_amount;
-  const char *lnbitsdescription = lnbits_description;
-  const char *webhookurl = webhook_url;
-  const char *successmessage = success_message;
-  const char *successurl = success_url;
+void portal(){
 
   WiFiManager wm;
   Serial.println("mounting FS...");
@@ -236,81 +231,27 @@ bool makelnurlp()
     portalScreen();
   }
 
-String spiffing = file.readStringUntil('\n');
-String spiffcontent = spiffing.c_str();
-DynamicJsonDocument json(1024);
-deserializeJson(json, spiffcontent);
-if (String(spiffcontent) != "placeholder")
-{
-  strcpy(lnbits_server, json["lnbits_server"]);
-  strcpy(lnbits_description, json["lnbits_description"]);
-  strcpy(admin_key, json["admin_key"]);
-  strcpy(lnbits_amount, json["lnbits_amount"]);
-  strcpy(high_pin, json["high_pin"]);
-  strcpy(time_pin, json["time_pin"]);
-  strcpy(webhook_url, json["webhook_url"]);
-  strcpy(success_message, json["success_message"]);
-  strcpy(success_url, json["success_url"]);
-}
-
 //ADD PARAMS TO WIFIMANAGER
-wm.setSaveConfigCallback(saveConfigCallback);
-
-WiFiManagerParameter custom_lnbits_server("server", "LNbits server", lnbits_server, 40);
-WiFiManagerParameter custom_lnbits_description("description", "Description", lnbits_description, 200);
-WiFiManagerParameter custom_admin_key("admin", "LNbits admin key", admin_key, 300);
-WiFiManagerParameter custom_lnbits_amount("amount", "Amount to charge (sats)", lnbits_amount, 10);
-WiFiManagerParameter custom_high_pin("high", "Pin to turn on", high_pin, 5);
-WiFiManagerParameter custom_time_pin("time", "Time for pin to turn on for (milisecs)", time_pin, 20);
-WiFiManagerParameter custom_webhook_url("weburl", "A URL to be called whenever this link receives a payment", webhook_url, 100);
-WiFiManagerParameter custom_success_message("message", "Will be shown to the user in his wallet after a successful payment", success_message, 100);
-WiFiManagerParameter custom_success_url("sucurl", "Will be shown as a clickable link to the user on payment", success_url, 100);
-wm.addParameter(&custom_lnbits_server);
-wm.addParameter(&custom_lnbits_description);
-wm.addParameter(&custom_admin_key);
-wm.addParameter(&custom_lnbits_amount);
-wm.addParameter(&custom_high_pin);
-wm.addParameter(&custom_time_pin);
-wm.addParameter(&custom_webhook_url);
-wm.addParameter(&custom_success_message);
-wm.addParameter(&custom_success_url);
+  wm.setSaveConfigCallback(saveConfigCallback);
+  
+  WiFiManagerParameter custom_lnbits_server("server", "LNbits server", lnbits_server, 40);
+  WiFiManagerParameter custom_invoice_key("invoice", "LNbits invoice key", invoice_key, 300);
+  WiFiManagerParameter custom_lnbits_amount("amount", "Amount to charge (sats)", lnbits_amount, 10);
+  WiFiManagerParameter custom_high_pin("high", "Pin to turn on", high_pin, 5);
+  WiFiManagerParameter custom_time_pin("time", "Time for pin to turn on for (milisecs)", time_pin, 20);
+  wm.addParameter(&custom_lnbits_server);
+  wm.addParameter(&custom_invoice_key);
+  wm.addParameter(&custom_lnbits_amount);
+  wm.addParameter(&custom_high_pin);
+  wm.addParameter(&custom_time_pin);
 //IF RESET WAS TRIGGERED, RUN PORTAL AND WRITE FILES
-
-if (!wm.autoConnect("⚡lnurltrigger⚡", "password1"))
-{
-  Serial.println("failed to connect and hit timeout");
-  delay(3000);
-  ESP.restart();
-  delay(5000);
-}
-Serial.println("connected :)");
-strcpy(lnbits_server, custom_lnbits_server.getValue());
-strcpy(lnbits_description, custom_lnbits_description.getValue());
-strcpy(admin_key, custom_admin_key.getValue());
-strcpy(lnbits_amount, custom_lnbits_amount.getValue());
-strcpy(high_pin, custom_high_pin.getValue());
-strcpy(time_pin, custom_time_pin.getValue());
-strcpy(webhook_url, custom_webhook_url.getValue());
-strcpy(success_message, custom_success_message.getValue());
-strcpy(success_url, custom_success_url.getValue());
-if (shouldSaveConfig)
-{
-  Serial.println("saving config");
-  DynamicJsonDocument json(1024);
-  json["lnbits_server"] = lnbits_server;
-  json["lnbits_description"] = lnbits_description;
-  json["admin_key"] = admin_key;
-  json["lnbits_amount"] = lnbits_amount;
-  json["high_pin"] = high_pin;
-  json["time_pin"] = time_pin;
-  json["webhook_url"] = webhook_url;
-  json["success_message"] = success_message;
-  json["success_url"] = success_url;
-
-  File configFile = SPIFFS.open("/config.txt", "w");
-  if (!configFile)
-  {
-    Serial.println("failed to open config file for writing");
+  
+  if (!wm.autoConnect("⚡lnurltrigger⚡", "password1")) {
+    Serial.println("failed to connect and hit timeout");
+    offlineScreen();
+    delay(3000);
+    ESP.restart();
+    delay(5000);
   }
   Serial.println("connected :)");
   strcpy(lnbits_server, custom_lnbits_server.getValue());
