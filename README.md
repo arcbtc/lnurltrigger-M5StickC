@@ -1,6 +1,8 @@
 # lnurltrigger-M5StickC
 M5StickC version of lnurltrigger
 
+> <i>Join our <a href="https://t.me/makerbits">telegram support/chat</a>.</i>
+
 Install Arduino IDE
 
 Install ESP32 boards
